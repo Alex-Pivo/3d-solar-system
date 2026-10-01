@@ -6,52 +6,6 @@ import { useTexture, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { PlanetData } from "@/data/planets";
 
-// --- КОМПОНЕНТ ЛУНЫ ---
-function Moon({ radius, distance, speed }: { radius: number; distance: number; speed: number }) {
-  const orbitRef = useRef<THREE.Group>(null);
-  const moonTexture = useTexture("/textures/moon.jpg");
-
-  useFrame((_, delta) => {
-    if (orbitRef.current) orbitRef.current.rotation.y += delta * speed;
-  });
-
-  return (
-    <group ref={orbitRef}>
-      <mesh position={[distance, 0, 0]}>
-        <sphereGeometry args={[radius, 32, 32]} />
-        <meshStandardMaterial map={moonTexture} roughness={1} />
-      </mesh>
-    </group>
-  );
-}
-
-// --- КОМПОНЕНТ МКС ---
-function ISS({ distance, speed }: { distance: number; speed: number }) {
-  const orbitRef = useRef<THREE.Group>(null);
-
-  useFrame((_, delta) => {
-    // МКС летит по орбите значительно быстрее Луны
-    if (orbitRef.current) orbitRef.current.rotation.y += delta * speed;
-  });
-
-  return (
-    // Наклоняем орбиту МКС, чтобы она летала не строго по экватору
-    <group ref={orbitRef} rotation={[Math.PI / 6, 0, 0]}>
-      <group position={[distance, 0, 0]}>
-        {/* Основной модуль (Металлический цилиндр) */}
-        <mesh rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.02, 0.02, 0.15, 8]} />
-          <meshStandardMaterial color="#e0e0e0" metalness={0.8} roughness={0.2} />
-        </mesh>
-        {/* Солнечные панели (Синие пластины) */}
-        <mesh>
-          <boxGeometry args={[0.08, 0.01, 0.25]} />
-          <meshStandardMaterial color="#1e3a8a" metalness={0.5} roughness={0.5} />
-        </mesh>
-      </group>
-    </group>
-  );
-}
 
 // --- ГЛАВНЫЙ КОМПОНЕНТ ПЛАНЕТЫ ---
 type PlanetProps = {
@@ -135,18 +89,7 @@ const handleClick = (e: any) => {
             <meshStandardMaterial color="#d4c5b0" side={THREE.DoubleSide} transparent opacity={0.6} roughness={0.8} />
           </mesh>
         )}
-
-        {/* --- ЛУНА --- */}
-        {/* Радиус Луны примерно в 4 раза меньше Земли, дистанция отнесена подальше */}
-        {data.hasMoon && (
-          <Moon radius={data.radius * 0.27} distance={data.radius + 2.5} speed={0.8} />
-        )}
-
-        {/* --- МКС --- */}
-        {/* МКС летит очень низко над поверхностью и гораздо быстрее */}
-        {data.hasISS && (
-          <ISS distance={data.radius + 0.2} speed={2.5} />
-        )}
+       
         
       </group>
     </group>
