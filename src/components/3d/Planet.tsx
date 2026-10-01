@@ -56,49 +56,49 @@ function ISS({ distance, speed }: { distance: number; speed: number }) {
 // --- ГЛАВНЫЙ КОМПОНЕНТ ПЛАНЕТЫ ---
 type PlanetProps = {
   data: PlanetData;
-  isPaused: boolean;
   showOrbit: boolean;
+  timeRef: React.MutableRefObject<number>; // Ссылка на глобальное время симуляции
   setHoveredPlanet: (name: string | null) => void;
   onPlanetClick: (data: PlanetData, position: THREE.Vector3) => void;
 };
 
-export default function Planet({ data, isPaused, showOrbit, setHoveredPlanet, onPlanetClick }: PlanetProps) {
-  const orbitRef = useRef<THREE.Group>(null);
-  const planetRef = useRef<THREE.Mesh>(null);
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
-  
+// Константа эпохи J2000 (1 января 2000)
+const J2000_TIMESTAMP = 946728000000;
+
+export default function Planet({ data, showOrbit, timeRef, setHoveredPlanet, onPlanetClick }: PlanetProps) {
+  const planetGroupRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const texture = useTexture(data.textureMap);
   const [hovered, setHovered] = useState(false);
 
   useFrame((_, delta) => {
-    if (orbitRef.current && !isPaused) {
-      orbitRef.current.rotation.y += delta * data.speed;
+    if (planetGroupRef.current) {
+      // Вычисляем, сколько дней прошло в нашей симуляции с 2000 года
+      const daysSinceJ2000 = (timeRef.current - J2000_TIMESTAMP) / (1000 * 60 * 60 * 24);
+      
+      // Формула текущего угла орбиты
+      const currentAngle = data.startAngle + (daysSinceJ2000 / data.period) * (Math.PI * 2);
+
+      // Перемещаем группу планеты по орбите
+      planetGroupRef.current.position.x = Math.cos(currentAngle) * data.distance;
+      planetGroupRef.current.position.z = Math.sin(currentAngle) * data.distance;
     }
-    if (planetRef.current) {
-      planetRef.current.rotation.y += delta * 0.2; 
-    }
-    
-    if (materialRef.current) {
-      const targetIntensity = hovered ? 0.3 : 0;
-      materialRef.current.emissiveIntensity = THREE.MathUtils.lerp(
-        materialRef.current.emissiveIntensity,
-        targetIntensity,
-        delta * 5
-      );
-    }
+
+    // Вращение самой планеты вокруг своей оси
+    if (meshRef.current) meshRef.current.rotation.y += delta * 0.2;
   });
 
-  const handleClick = (e: any) => {
+const handleClick = (e: any) => {
     e.stopPropagation();
-    if (planetRef.current) {
+    if (planetGroupRef.current) {
       const worldPosition = new THREE.Vector3();
-      planetRef.current.getWorldPosition(worldPosition);
+      planetGroupRef.current.getWorldPosition(worldPosition);
       onPlanetClick(data, worldPosition);
     }
   };
 
   return (
-    <group ref={orbitRef}>
+    <group>
       
       {showOrbit && (
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -108,20 +108,20 @@ export default function Planet({ data, isPaused, showOrbit, setHoveredPlanet, on
       )}
 
       {/* ЛОКАЛЬНАЯ ГРУППА ПЛАНЕТЫ */}
-      <group position={[data.distance, 0, 0]}>
+      <group ref={planetGroupRef}>
         
         <mesh 
-          ref={planetRef}
+          ref={meshRef}
           onPointerOver={(e) => { e.stopPropagation(); setHovered(true); setHoveredPlanet(data.name); document.body.style.cursor = "pointer"; }}
           onPointerOut={(e) => { e.stopPropagation(); setHovered(false); setHoveredPlanet(null); document.body.style.cursor = "auto"; }}
           onClick={handleClick}
         >
           <sphereGeometry args={[data.radius, 32, 32]} />
-          <meshStandardMaterial ref={materialRef} map={texture} emissive="white" emissiveIntensity={0} />
+          <meshStandardMaterial map={texture} />
           
           {hovered && (
             <Html distanceFactor={25} position={[0, data.radius + 0.8, 0]} center zIndexRange={[100, 0]}>
-              <div className="bg-black/60 text-white px-3 py-1 rounded-full border border-white/10 backdrop-blur-md pointer-events-none text-sm animate-pulse">
+              <div className="bg-black/60 text-white px-3 py-1 rounded-full text-sm animate-pulse">
                 {data.name}
               </div>
             </Html>
