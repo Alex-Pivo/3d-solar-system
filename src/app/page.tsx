@@ -16,6 +16,7 @@ import ISS from "@/components/3d/ISS";
 import Voyager from "@/components/3d/Voyager";
 import JWST from "@/components/3d/JWST";
 import Moon from "@/components/3d/Moon";
+import BlackHole from "@/components/3d/BlackHole";
 
 // Ползунок начинается с 2000 года и всегда заканчивается 31 декабря текущего года
 const currentYear = new Date().getFullYear();
@@ -31,6 +32,9 @@ export default function Home() {
   // Стейты для тумблеров
   const [showOrbits, setShowOrbits] = useState<boolean>(true);
   const [showHabitableZone, setShowHabitableZone] = useState<boolean>(false);
+
+  // Стейт для переключения локаций
+  const [currentScene, setCurrentScene] = useState<"solar" | "blackhole">("solar");
 
   // Состояния времени (ручное управление ползунком)
   const [timeValue, setTimeValue] = useState<number>(
@@ -79,8 +83,53 @@ export default function Home() {
     }
   };
 
+  // Функция для безопасного переключения сцен
+  const handleSceneChange = (scene: "solar" | "blackhole") => {
+    setCurrentScene(scene);
+    setActivePlanet(null); // Закрываем правую панель
+    setHoveredPlanet(null);
+    
+    // Возвращаем камеру в начальное положение
+    if (cameraControlsRef.current) {
+      cameraControlsRef.current.setLookAt(0, 30, 80, 0, 0, 0, true);
+    }
+  };
+
   return (
     <main className="w-full h-screen relative bg-black overflow-hidden">
+      {/* === МЕНЮ ВЫБОРА СЦЕНЫ === */}
+      <div className="absolute top-10 left-10 z-20 flex flex-col gap-2">
+        <div className="text-gray-500 font-mono text-[10px] tracking-[0.2em] uppercase mb-1">
+          СЦЕНА
+        </div>
+        
+        {/* Кнопка "Солнечная система" */}
+        <button 
+          onClick={() => handleSceneChange("solar")}
+          className={`w-64 px-4 py-3 flex justify-between items-center border font-mono text-xs uppercase transition-all backdrop-blur-md ${
+            currentScene === "solar" 
+              ? "border-white text-white bg-white/5" 
+              : "border-white/10 text-gray-500 bg-black/40 hover:border-white/30"
+          }`}
+        >
+          <span>СОЛНЕЧНАЯ СИСТЕМА</span>
+          <div className={`w-2 h-2 rounded-full ${currentScene === "solar" ? "bg-white shadow-[0_0_5px_white]" : "bg-gray-600"}`} />
+        </button>
+
+        {/* Кнопка "Черная дыра" */}
+        <button 
+          onClick={() => handleSceneChange("blackhole")}
+          className={`w-64 px-4 py-3 flex justify-between items-center border font-mono text-xs uppercase transition-all backdrop-blur-md ${
+            currentScene === "blackhole" 
+              ? "border-white text-white bg-white/5" 
+              : "border-white/10 text-gray-500 bg-black/40 hover:border-white/30"
+          }`}
+        >
+          <span>ЧЕРНАЯ ДЫРА</span>
+          <div className={`w-2 h-2 rounded-full ${currentScene === "blackhole" ? "bg-white shadow-[0_0_5px_white]" : "bg-gray-600"}`} />
+        </button>
+      </div>
+
       {/* Верхний парящий заголовок (скрывается, если выбрана планета) */}
       <div
         className={`absolute top-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-all duration-500 ease-out flex flex-col items-center ${hoveredPlanet && !activePlanet ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
@@ -218,71 +267,81 @@ export default function Home() {
         <ambientLight intensity={0.5} />
 
         <Suspense fallback={null}>
+          {/* Эффекты свечения оставляем общими для обеих сцен */}
           <EffectComposer>
             <Bloom luminanceThreshold={1} mipmapBlur intensity={1.5} />
           </EffectComposer>
 
           <Starfield count={10000} />
-          <Sun
-            setHoveredPlanet={setHoveredPlanet}
-            onPlanetClick={focusOnPlanet}
-          />
-          <AsteroidBelt count={6000} />
 
-          {/* Опасный околоземный астероид */}
-          <NearEarthAsteroid
-            timeValue={timeValue} // Передаем дату из ползунка
-            timeRef={timeRef}
-            setHoveredPlanet={setHoveredPlanet}
-            onPlanetClick={focusOnPlanet}
-          />
-
-          {/* ИСКУССТВЕННЫЕ ОБЪЕКТЫ */}
-          <Moon
-            timeRef={timeRef}
-            setHoveredPlanet={setHoveredPlanet}
-            onPlanetClick={focusOnPlanet}
-          />
-
-          <ISS
-            timeRef={timeRef}
-            setHoveredPlanet={setHoveredPlanet}
-            onPlanetClick={focusOnPlanet}
-            isFocused={activePlanet?.id === "iss"}
-          />
-          <JWST
-            timeRef={timeRef}
-            setHoveredPlanet={setHoveredPlanet}
-            onPlanetClick={focusOnPlanet}
-          />
-          <Voyager
-            setHoveredPlanet={setHoveredPlanet}
-            onPlanetClick={focusOnPlanet}
-          />
-
-          {/* Обитаемая зона (охватывает орбиту Земли) */}
-          {showHabitableZone && (
-            <mesh rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[13, 19, 128]} />
-              <meshBasicMaterial
-                color="#22c55e"
-                transparent
-                opacity={0.08}
-                side={THREE.DoubleSide}
+          {currentScene === "solar" ? (
+            // ================= СОЛНЕЧНАЯ СИСТЕМА =================
+            <>
+              <Sun
+                setHoveredPlanet={setHoveredPlanet}
+                onPlanetClick={focusOnPlanet}
               />
-            </mesh>
-          )}
+              <AsteroidBelt count={6000} />
 
-          {planetsData.map((planet) => (
-            <Planet
-              key={planet.id}
-              data={planet}
-              showOrbit={showOrbits}
-              timeRef={timeRef}
-              setHoveredPlanet={setHoveredPlanet}
-              onPlanetClick={focusOnPlanet}
-            />
-          ))}
+              {/* Опасный околоземный астероид */}
+              <NearEarthAsteroid
+                timeValue={timeValue}
+                timeRef={timeRef}
+                setHoveredPlanet={setHoveredPlanet}
+                onPlanetClick={focusOnPlanet}
+              />
+
+              {/* ИСКУССТВЕННЫЕ ОБЪЕКТЫ */}
+              <Moon
+                timeRef={timeRef}
+                setHoveredPlanet={setHoveredPlanet}
+                onPlanetClick={focusOnPlanet}
+              />
+
+              <ISS
+                timeRef={timeRef}
+                setHoveredPlanet={setHoveredPlanet}
+                onPlanetClick={focusOnPlanet}
+                isFocused={activePlanet?.id === "iss"}
+              />
+              <JWST
+                timeRef={timeRef}
+                setHoveredPlanet={setHoveredPlanet}
+                onPlanetClick={focusOnPlanet}
+              />
+              <Voyager
+                setHoveredPlanet={setHoveredPlanet}
+                onPlanetClick={focusOnPlanet}
+              />
+
+              {/* Обитаемая зона (охватывает орбиту Земли) */}
+              {showHabitableZone && (
+                <mesh rotation={[-Math.PI / 2, 0, 0]}>
+                  <ringGeometry args={[13, 19, 128]} />
+                  <meshBasicMaterial
+                    color="#22c55e"
+                    transparent
+                    opacity={0.08}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+              )}
+
+              {planetsData.map((planet) => (
+                <Planet
+                  key={planet.id}
+                  data={planet}
+                  showOrbit={showOrbits}
+                  timeRef={timeRef}
+                  setHoveredPlanet={setHoveredPlanet}
+                  onPlanetClick={focusOnPlanet}
+                />
+              ))}
+            </>
+          ) : (
+            // ================= ЧЕРНАЯ ДЫРА =================
+            <BlackHole />
+          )}
         </Suspense>
       </Canvas>
     </main>
