@@ -10,6 +10,7 @@ import Planet from "@/components/3d/Planet";
 import AsteroidBelt from "@/components/3d/AsterioidBelt";
 import Starfield from "@/components/3d/Starfield";
 import { planetsData, PlanetData } from "@/data/planets";
+import MarsRoverPhotos from "@/ui/MarsRoverPhotos";
 
 // Константы для ползунка времени
 const MIN_TIME = new Date("2000-01-01").getTime();
@@ -122,7 +123,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Sci-Fi панель информации (адаптивная: выезжает справа на ПК или снизу на мобилках) */}
+      {/* Sci-Fi панель информации */}
       <div className={`absolute z-30 bg-black/60 backdrop-blur-xl border-white/10 flex flex-col transition-transform duration-700 ease-in-out overflow-y-auto
         bottom-0 left-0 w-full h-[60vh] border-t rounded-t-3xl p-6 pb-12
         md:top-0 md:bottom-auto md:right-0 md:left-auto md:w-1/3 md:h-full md:border-t-0 md:border-l md:rounded-none md:p-8 md:justify-center
@@ -151,6 +152,9 @@ export default function Home() {
                 <p className="font-bold text-sm md:text-base">{activePlanet.radius * 6371} км</p>
               </div>
             </div>
+
+            {/* --- ВЫВОД ФОТО С МАРСА --- */}
+            {activePlanet.id === "mars" && <MarsRoverPhotos />}
 
             <button 
               onClick={resetView}
