@@ -72,7 +72,6 @@ export default function MarsRoverPhotos() {
       </div>
       
       <div className="relative w-full h-32 md:h-48 rounded overflow-hidden border border-white/5 bg-black">
-        {/* Я убрал grayscale, теперь картинка будет такой, какая она есть в оригинале */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 
           src={photo.img_src} 

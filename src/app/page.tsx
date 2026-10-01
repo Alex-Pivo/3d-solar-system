@@ -11,10 +11,12 @@ import AsteroidBelt from "@/components/3d/AsterioidBelt";
 import Starfield from "@/components/3d/Starfield";
 import { planetsData, PlanetData } from "@/data/planets";
 import MarsRoverPhotos from "@/ui/MarsRoverPhotos";
+import NearEarthAsteroid from "@/components/3d/NearEathAsteroid";
 
-// Константы для ползунка времени
+// Ползунок начинается с 2000 года и всегда заканчивается 31 декабря текущего года
+const currentYear = new Date().getFullYear();
 const MIN_TIME = new Date("2000-01-01").getTime();
-const MAX_TIME = new Date("2026-12-31").getTime();
+const MAX_TIME = new Date(`${currentYear}-12-31`).getTime();
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export default function Home() {
@@ -119,7 +121,7 @@ export default function Home() {
             }}
             className="w-full h-2 bg-white/20 rounded-lg cursor-pointer accent-blue-500 outline-none"
           />
-          <span>2026</span>
+          <span>{currentYear}</span>
         </div>
       </div>
 
@@ -181,8 +183,19 @@ export default function Home() {
           </EffectComposer>
 
           <Starfield count={10000} />
-          <Sun />
+          <Sun 
+            setHoveredPlanet={setHoveredPlanet}
+            onPlanetClick={focusOnPlanet}
+          />
           <AsteroidBelt count={6000} />
+
+          {/* Опасный околоземный астероид */}
+          <NearEarthAsteroid 
+            timeValue={timeValue} // Передаем дату из ползунка
+            timeRef={timeRef}
+            setHoveredPlanet={setHoveredPlanet}
+            onPlanetClick={focusOnPlanet}
+          />
 
           {/* Обитаемая зона (охватывает орбиту Земли) */}
           {showHabitableZone && (
